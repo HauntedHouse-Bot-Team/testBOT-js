@@ -29,7 +29,7 @@ discordClient.on('ready', () => {
 discordClient.on('message', msg => {
 
     // 画像のロギング
-    if (msg.attachments.first | !msg.author === ownerId) {
+    if (msg.attachments.first) {
         const attachmentFileUrls = msg.attachments.map(attachment => attachment.url)
         const attachmentFileNames = msg.attachments.map(attachment => attachment.name)
         for (let index = 0; index < attachmentFileNames.length; index++) {
