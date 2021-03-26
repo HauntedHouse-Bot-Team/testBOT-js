@@ -1,6 +1,8 @@
 require('dotenv').config()
 const env = process.env
 
+//Discordライブラリ
+
 const Discord = require('discord.js')
 const discordClient = new Discord.Client()
 
@@ -14,13 +16,19 @@ const fs = require('fs')
 
 //権限周り
 const ownerId = '369876595051069440'
-const adminRoles = []
+const isDev = true
+const disabledChannel = ['824931077067112469'] //テスト鯖の'botテスト_disnabled'チャンネル
+const protectedUser = ['369876595051069440',]
 
-const mankoChannelId = ''
-
+//コマンドの設定
 const commandPrefix = '!'
 const commandPattern = /[^\s]+/g
 const useridPattern = /[0-9]+/
+
+//検閲用APIのエンドポイント
+const inspectionEndpointBase = 'http://127.0.0.1:5000'
+const inspectionEndpointPath = '/inspection'
+const inspectionEndpoint = inspectionEndpointBase + inspectionEndpointPath
 
 discordClient.on('ready', () => {
     console.log(`${date} : Bot is ready`)
@@ -30,38 +38,35 @@ discordClient.on('message', msg => {
 
     // 画像のロギング
     if (msg.attachments.first) {
-        const attachmentFileUrls = msg.attachments.map(attachment => attachment.url)
-        const attachmentFileNames = msg.attachments.map(attachment => attachment.name)
-        for (let index = 0; index < attachmentFileNames.length; index++) {
-            let snowflake = Discord.SnowflakeUtil.generate()
-            let fileName = './images/' + `${snowflake}` + '-' + `${attachmentFileNames[index]}`
-
-            axios.get(attachmentFileUrls[index], { responseType: 'arraybuffer' })
-                .then(
-                    response => {
-                        fs.writeFileSync(fileName, Buffer.from(response.data), 'binary')
-                        console.log(`${date} : ${fileName} was saved.`)
-                    }
-                )
-        }
-    }
-
-
-    if (msg.content.startsWith(commandPrefix)) {
-        const userCommand = msg.content.match(commandPattern)
-
-        if (userCommand[0] == '!卒業' | useridPattern.test(userCommand[1])) {
-            msg.channel.send('コマンドが未定義です。')
-        }
-
-        if (userCommand[0] == '!manko' | userCommand[0] == '!manco') {
-            msg.channel.send('oh!manko!')
-        }
-
+        (async () => {
+            const attachmentFileURLs = msg.attachments.map(attachment => attachment.url)
+            const attachmentFileNames = msg.attachments.map(attachment => attachment.name)
+            for (let index = 0; index < attachmentFileNames.length; index++) {
+                const imageURL = attachmentFileURLs[index]
+                const snowflake = Discord.SnowflakeUtil.generate()
+                const fileExtension = attachmentFileNames[index].split('.').pop()
+                const filePath = './images/' + `${snowflake}` + '.' + fileExtension
+                const response = await axios.get(imageURL, { responseType: 'arraybuffer' })
+                fs.writeFileSync(filePath, Buffer.from(response.data), 'binary')
+                const inspectionImage = await axios.post(inspectionEndpoint, {
+                    url: `${imageURL}`
+                })
+                const result = inspectionImage.data.inspectionResult
+                if (!result) {
+                    await msg.delete()
+                    console.log(`${date} : Image was deleted.`)
+                }
+            }
+        })()
     }
 
 }
-
 )
 
-discordClient.login(env.DISCORD_BOT_TOKEN)
+    if (isDev) {
+        var DISCORD_TAKEN = env.DISCORD_BOT_DEV_TOKEN
+    } else {
+        var DISCORD_TAKEN = env.DISCORD_BOT_TOKEN
+    }
+
+    discordClient.login(DISCORD_TAKEN)
