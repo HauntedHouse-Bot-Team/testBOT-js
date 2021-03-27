@@ -2,7 +2,7 @@ require('dotenv').config()
 const env = process.env
 
 //Discordライブラリ
-import Discord from "discord.js";
+const Discord = require('discord.js')
 
 const discordClient = new Discord.Client()
 
@@ -10,9 +10,9 @@ const discordClient = new Discord.Client()
 
 const date = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
 
-import { axios } from "axios"
+const axios = require('axios')
 
-import { fs } from "fs";
+const fs = require('fs')
 
 //ここからbotの本体部分
 
