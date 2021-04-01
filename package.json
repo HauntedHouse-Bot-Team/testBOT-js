@@ -4,9 +4,8 @@
   "description": "",
   "main": "src/bot.js",
   "scripts": {
-    "build": "babel src/bot.js -d dist",
-    "start": "npm run build && ./node_modules/nodemon/bin/nodemon.js dist/bot.js",
-    "serve": "node dist/bot.js",
+    "start": "NODE_ENV=dev ./node_modules/nodemon/bin/nodemon.js src/bot.js",
+    "serve": "node src/bot.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

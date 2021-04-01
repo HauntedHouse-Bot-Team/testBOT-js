@@ -3,29 +3,24 @@ const env = process.env
 
 //Discordライブラリ
 const Discord = require('discord.js')
-
 const discordClient = new Discord.Client()
 
-//Nextcloudライブラリ
-
-const date = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+/*
+const Nextcloud = require('nextcloud-node-client')
+const nextcloudClient = new Nextcloud.Client()
+*/
 
 const axios = require('axios')
-
 const fs = require('fs')
 
 //ここからbotの本体部分
-
-//権限周り
-const ownerId = '369876595051069440'
-const isDev = true
-const disabledChannel = ['824931077067112469'] //テスト鯖の'botテスト_disnabled'チャンネル
-const protectedUser = ['369876595051069440',]
 
 //コマンドの設定
 const commandPrefix = '!'
 const commandPattern = /[^\s]+/g
 const useridPattern = /[0-9]+/
+const discordImageURL = /^https?:\/\/([a-z]{1,}\.)?(discordapp\.com)(\/(.*)|\?(.*)|$)/
+//正規表現まわり
 
 //検閲用APIのエンドポイント
 const inspectionEndpointBase = 'http://127.0.0.1:5000'
@@ -33,7 +28,7 @@ const inspectionEndpointPath = '/inspection'
 const inspectionEndpoint = inspectionEndpointBase + inspectionEndpointPath
 
 discordClient.on('ready', () => {
-    console.log(`${date} : Bot is ready`)
+    console.log(`${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} : [INFO] Bot is ready`)
 })
 
 discordClient.on('message', msg => {
@@ -47,34 +42,75 @@ discordClient.on('message', msg => {
                 const imageURL = attachmentFileURLs[index]
                 const snowflake = Discord.SnowflakeUtil.generate()
                 const fileExtension = attachmentFileNames[index].split('.').pop()
+                const fileName = snowflake + '.' + fileExtension
                 const filePath = './images/' + `${snowflake}` + '.' + fileExtension
+
                 try {
                     const response = await axios.get(imageURL, { responseType: 'arraybuffer' })
                     fs.writeFileSync(filePath, Buffer.from(response.data), 'binary')
+                    /*
+                    const nextcloudFolder = await nextcloudClient.getFolder("/bot/images")
+                    await nextcloudFolder.createFile(fileName, Buffer.from(response.data))
+                    */
                 } catch (error) {
-                    console.log(error)
+                    if (error.response) {
+                        console.log(`${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} : [ERROR] Image download was failture. ${error.response.status} ${error.response.statusText}`)
+                    }
                 }
-                // const response = await axios.get(imageURL, { responseType: 'arraybuffer' })
 
-                const inspectionImage = await axios.post(inspectionEndpoint, {
-                    url: `${imageURL}`
-                })
-                const result = inspectionImage.data.inspectionResult
-                if (!result) {
-                    await msg.delete()
-                    console.log(`${date} : Image was deleted.`)
+                try {
+                    const inspectionImage = await axios.post(inspectionEndpoint, {
+                        url: `${imageURL}`,
+                        fileName: `${fileName}`
+                    })
+                    const result = inspectionImage.data.inspectionResult
+                    if (result <= 10) {
+                        await msg.delete()
+                        console.log(`${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} : [INFO] Image was deleted.`)
+                    } else {
+                        console.log(`${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} : [INFO] inspection number ${result}`)
+                    }
+                } catch (error) {
+                    if (error.response) {
+                        console.log(`${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} : [ERROR] Image inspection was failture. ${error.response.status} ${error.response.statusText}`)
+                    } else {
+                        console.log(error)
+                    }
                 }
+
             }
         })()
     }
 
+
+    if (msg.content.startsWith(commandPrefix)) {
+        const userCommand = msg.content.match(commandPattern)
+        if (userCommand[0] === '!test') {
+            msg.channel.send('Bot is running.')
+        } else if (userCommand[0] === '!blacklist') {
+            if (userCommand[1] === 'add') {
+                if (discordImageURL.test(userCommand[2])) {
+                    
+                }
+            }
+
+        }
+    }
+
+
 }
 )
 
-if (isDev) {
-    var DISCORD_TAKEN = env.DISCORD_BOT_DEV_TOKEN
-} else {
-    var DISCORD_TAKEN = env.DISCORD_BOT_TOKEN
+const checkEnviroment = () => {
+    if (env.NODE_ENV === 'production') {
+        return env.DISCORD_BOT_TOKEN
+    } else if (env.NODE_ENV === 'staging') {
+        return env.DISCORD_BOT_TOKEN
+    } else if (env.NODE_ENV === 'dev') {
+        return env.DISCORD_BOT_DEV_TOKEN
+    } else {
+        return env.DISCORD_BOT_DEV_TOKEN
+    }
 }
 
-discordClient.login(DISCORD_TAKEN)
+discordClient.login(checkEnviroment())

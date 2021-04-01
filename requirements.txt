@@ -1,0 +1,7 @@
+Flask
+PIL
+imagehash
+glob
+io
+requests
+os

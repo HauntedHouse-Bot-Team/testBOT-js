@@ -272,5 +272,7 @@ Thumbs.db #thumbnail cache on Windows
 
 
 # End of https://www.toptal.com/developers/gitignore/api/python,node
-/images/*
+!/src/inspection/blacklist/.gitkeep
 !/images/.gitkeep
+/images/*
+/src/inspection/blacklist/*
