@@ -1,0 +1,17 @@
+version: "3.7"
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: ./docker/bot/Dockerfile
+        restart: unless-stopped
+        environment: 
+          DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+        depends_on:
+            - api
+    api:
+        build:
+          context: .
+          dockerfile: ./docker/inspection/Dockerfile
+        restart: unless-stopped
